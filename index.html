@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dot-Matrix Femboy Simulator (Mizah Sürümü)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1015;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Sahne ve Karakter Alanı */
+    .stage-container {
+      position: relative;
+      width: 600px;
+      height: 400px;
+      background: #181a24;
+      border: 2px solid #2e3248;
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      border-radius: 12px;
+    }
+
+    /* İşaret Edilen Yerde Çıkacak Olan UI (Kıyafet Butonu) */
+    #ui-container {
+      position: absolute;
+      right: 50px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none; /* Görünmezken tıklanmasın */
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    #ui-container.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .maid-btn {
+      background: #2e3248;
+      border: 2px solid #4f46e5;
+      color: white;
+      font-size: 24px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+    }
+    .maid-btn:hover {
+      background: #4f46e5;
+      box-shadow: 0 0 25px rgba(79, 70, 229, 0.8);
+      transform: scale(1.05);
+    }
+
+    /* Karakterin Konuşma Balonu */
+    .speech-bubble {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      color: #0f1015;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: rgba(255, 255, 255, 0.9) transparent transparent transparent;
+    }
+    .speech-bubble.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="stage-container">
+    <div class="speech-bubble" id="bubble"></div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    
+    <!-- UI Butonu (Başlangıçta Gizli) -->
+    <div id="ui-container">
+      <button class="maid-btn" onclick="transformMaid()">
+        👗 <span>➡️</span>
+      </button>
+    </div>
+  </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const uiContainer = document.getElementById('ui-container');
+const bubble = document.getElementById('bubble');
+
+class InteractiveCharacter {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.dotR = 2.4;
+    this.size = 144;
+    this.timer = 0;
+    
+    this.outfit = 'casual'; // 'casual' veya 'maid'
+    this.action = 'idle';   // 'idle', 'wave', 'point', 'shy'
+
+    // Renk Paleti (Fotoğrafındaki tarz + Maid + Utanma Efekti)
+    this.colors = {
+      skin: '#e8b896',
+      blush: 'rgba(239, 68, 68, 0.65)', // Anime kızarıklığı
+      hair: '#362419',
+      eyebrow: '#1a100b',
+      denim: '#3b6998',
+      denimLight: '#5282b5',
+      shirt: '#1c1c21',
+      pants: '#242730',
+      maidBlack: '#18181b',
+      maidWhite: '#f8fafc',
+    };
+  }
+
+  dot(cx, cy, r, color) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  dotCluster(cx, cy, radius, color) {
+    const step = this.dotR * 2.2;
+    for (let y = -radius; y <= radius; y += step) {
+      for (let x = -radius; x <= radius; x += step) {
+        if (x * x + y * y <= radius * radius) {
+          this.dot(cx + x, cy + y, this.dotR, color);
+        }
+      }
+    }
+  }
+
+  draw() {
+    this.timer += 0.05;
+    
+    // Utanma (shy) durumunda daha hızlı nefes alma, diğerlerinde normal
+    const bob = Math.sin(this.timer * (this.action === 'shy' ? 8 : 4)) * (this.action === 'shy' ? 3 : 1.5);
+    // Utanırken biraz içe kapanma (aşağı çökme) efekti
+    const crouch = this.action === 'shy' ? 10 : 0;
+
+    ctx.save();
+    ctx.translate(this.x - this.size / 2, this.y - this.size / 2 + crouch);
+
+    // --- 1. BACAKLAR ---
+    if (this.outfit === 'casual') {
+      this.dotCluster(56, 122 + bob, 12, this.colors.pants);
+      this.dotCluster(88, 122 + bob, 12, this.colors.pants);
+    } else {
+      // Maid çorapları ve etek altı
+      this.dotCluster(56, 122 + bob, 10, this.colors.maidBlack);
+      this.dotCluster(88, 122 + bob, 10, this.colors.maidBlack);
+      this.dotCluster(56, 134 + bob, 6, this.colors.maidWhite);
+      this.dotCluster(88, 134 + bob, 6, this.colors.maidWhite);
+    }
+
+    // --- 2. GÖVDE VE KIYAFET ---
+    if (this.outfit === 'casual') {
+      this.dotCluster(72, 82 + bob, 22, this.colors.shirt);
+      this.dotCluster(72, 78 + bob, 24, this.colors.denimLight);
+    } else {
+      // Maid Elbisesi
+      this.dotCluster(72, 80 + bob, 24, this.colors.maidBlack);
+      this.dotCluster(72, 84 + bob, 16, this.colors.maidWhite); // Önlük
+    }
+
+    // --- 3. KAFA VE SAÇ ---
+    this.dotCluster(72, 42 + bob, 22, this.colors.skin);
+    this.dotCluster(72, 24 + bob, 22, this.colors.hair);
+
+    // --- 4. YÜZ İFADESİ VE UTANMA ---
+    // Kaşlar
+    if (this.action === 'shy') {
+      // Utanırken kaşlar aşağı düşer (üzgün/mahçup)
+      this.dotCluster(63, 38 + bob, 3, this.colors.eyebrow);
+      this.dotCluster(81, 38 + bob, 3, this.colors.eyebrow);
+    } else {
+      this.dotCluster(63, 36 + bob, 4, this.colors.eyebrow);
+      this.dotCluster(81, 36 + bob, 4, this.colors.eyebrow);
+    }
+    
+    // Gözler
+    this.dot(64, 42 + bob, 2.5, '#0f172a');
+    this.dot(82, 42 + bob, 2.5, '#0f172a');
+    this.dot(65, 41 + bob, 1, '#ffffff');
+    this.dot(83, 41 + bob, 1, '#ffffff');
+
+    // Kızarma (Shy) Efekti
+    if (this.action === 'shy') {
+      this.dotCluster(58, 48 + bob, 6, this.colors.blush);
+      this.dotCluster(86, 48 + bob, 6, this.colors.blush);
+    }
+
+    // Ağız
+    if (this.action === 'wave' || this.action === 'point') {
+      // Gülümseme
+      this.dotCluster(72, 51 + bob, 4, '#aa5b4c'); 
+    } else if (this.action === 'shy') {
+      // Utangaç küçük ağız
+      this.dot(72, 52 + bob, 2, '#aa5b4c');
+    } else {
+      // Normal
+      this.dotCluster(72, 50 + bob, 2, '#aa5b4c');
+    }
+
+    // --- 5. KOLLAR VE ELLER (ANİMASYONA GÖRE) ---
+    if (this.action === 'wave') {
+      // Sol kol sabit
+      this.dotCluster(46, 80 + bob, 14, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      // Sağ kol yukarıda sallanıyor
+      const waveMotion = Math.sin(this.timer * 8) * 8;
+      this.dotCluster(105 + waveMotion, 50 - waveMotion, 10, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      this.dotCluster(110 + waveMotion, 40 - waveMotion, 8, this.colors.skin); // El
+    } 
+    else if (this.action === 'point') {
+      // Sol kol sabit
+      this.dotCluster(46, 80 + bob, 14, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      // Sağ kol sağa (butonun olduğu yere) dümdüz işaret ediyor
+      this.dotCluster(105, 78 + bob, 12, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      this.dotCluster(125, 78 + bob, 6, this.colors.skin); // El
+    }
+    else if (this.action === 'shy') {
+      // Utandığında elleriyle yüzünü/göğsünü gizlemeye çalışır
+      this.dotCluster(60, 65 + bob, 8, this.colors.skin); // Sol el içerde
+      this.dotCluster(84, 65 + bob, 8, this.colors.skin); // Sağ el içerde
+    } 
+    else {
+      // Idle (Normal duruş)
+      this.dotCluster(46, 80 + bob, 14, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      this.dotCluster(98, 80 + bob, 14, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      this.dotCluster(46, 95 + bob, 7, this.colors.skin);
+      this.dotCluster(98, 95 + bob, 7, this.colors.skin);
+    }
+
+    ctx.restore();
+  }
+}
+
+const char = new InteractiveCharacter(canvas.width / 2, canvas.height / 2);
+
+function showBubble(text, duration) {
+  bubble.innerText = text;
+  bubble.classList.add('visible');
+  if (duration) {
+    setTimeout(() => { bubble.classList.remove('visible'); }, duration);
+  }
+}
+
+// --- SİNEMATİK AKIŞ KONTROLÜ ---
+function startSequence() {
+  // 1. Aşama: Ekrana bakar, el sallar ve gülümser
+  char.action = 'wave';
+  showBubble("Selam aga, hoş geldin!", 2000);
+  
+  // 2. Aşama: 2 saniye sonra sağdaki butonu işaret eder
+  setTimeout(() => {
+    char.action = 'point';
+    showBubble("Şuradaki butona tıklasana...", 2000);
+    
+    // Butonu görünür yap
+    setTimeout(() => {
+      uiContainer.classList.add('visible');
+    }, 500);
+
+  }, 2500);
+
+  // 3. Aşama: İşaret etmeyi bırakır ve bekler
+  setTimeout(() => {
+    char.action = 'idle';
+  }, 4500);
+}
+
+// Butona Tıklanınca Çalışacak Fonksiyon
+function transformMaid() {
+  // UI Butonunu geri gizle
+  uiContainer.classList.remove('visible');
+  
+  // Kıyafeti değiştir ve utangaç animasyonuna geç
+  char.outfit = 'maid';
+  char.action = 'shy';
+  
+  // Eğlenceli diyalog
+  showBubble("B-Bu da ne böyle?! Hemen sil bunu GitHub'dan... 😳", 4000);
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  char.draw();
+  requestAnimationFrame(loop);
+}
+
+// Motoru başlat
+loop();
+
+// Sayfa yüklendikten 1 saniye sonra sinematiği başlat
+setTimeout(startSequence, 1000);
+
+</script>
+</body>
+</html>
