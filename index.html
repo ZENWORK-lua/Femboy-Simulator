@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Dot-Matrix Troll Simulator (HD Sürüm)</title>
+  <title>Dot-Matrix Troll Simulator (Açık Etekli Maid Sürümü)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -17,7 +17,6 @@
       overflow: hidden;
     }
     
-    /* Daha büyük, HD Sahne */
     .stage-container {
       position: relative;
       width: 900px;
@@ -34,7 +33,6 @@
       border-radius: 14px;
     }
 
-    /* İşaret Edilen UI */
     #ui-container {
       position: absolute;
       right: 60px;
@@ -70,7 +68,6 @@
       transform: scale(1.05);
     }
 
-    /* Konuşma Balonu */
     .speech-bubble {
       position: absolute;
       top: 40px;
@@ -126,10 +123,9 @@ class InteractiveCharacter {
     this.x = x;
     this.y = y;
     
-    // HD KALİTE AYARLARI
-    this.scale = 2.8;      // Karakteri devasa yapar
-    this.dotR = 1.4;       // Noktalar daha ince (yüksek çözünürlük hissi)
-    this.size = 144;       // İç matris alanı
+    this.scale = 2.8;      
+    this.dotR = 1.4;       
+    this.size = 144;       
     this.timer = 0;
     
     this.outfit = 'casual';
@@ -138,14 +134,14 @@ class InteractiveCharacter {
     this.colors = {
       skin: '#fcd3b6',
       skinShadow: '#dfaf8e',
-      blush: 'rgba(244, 63, 94, 0.75)', // Daha belirgin anime kızarıklığı
+      blush: 'rgba(244, 63, 94, 0.75)', 
       hair: '#291b13',
       eyebrow: '#170e0a',
       denim: '#345e8a',
       denimLight: '#4a79a5',
       shirt: '#18181f',
       pants: '#1e212b',
-      maidBlack: '#121217',
+      maidBlack: '#18181f',
       maidWhite: '#ffffff',
       maidFrill: '#e2e8f0'
     };
@@ -159,7 +155,6 @@ class InteractiveCharacter {
   }
 
   dotCluster(cx, cy, radius, color) {
-    // Adım aralığını daraltarak yoğunluğu (çözünürlüğü) artırıyoruz
     const step = this.dotR * 2.0; 
     for (let y = -radius; y <= radius; y += step) {
       for (let x = -radius; x <= radius; x += step) {
@@ -174,11 +169,9 @@ class InteractiveCharacter {
     this.timer += 0.05;
     
     const bob = Math.sin(this.timer * (this.action === 'shy' ? 8 : 4)) * (this.action === 'shy' ? 3 : 1.5);
-    const crouch = this.action === 'shy' ? 12 : 0; // Utanınca daha çok çöksün
+    const crouch = this.action === 'shy' ? 12 : 0; 
 
     ctx.save();
-    
-    // Büyütme (Scale) İşlemi
     ctx.translate(this.x, this.y + crouch);
     ctx.scale(this.scale, this.scale);
     ctx.translate(-this.size / 2, -this.size / 2);
@@ -188,46 +181,58 @@ class InteractiveCharacter {
       this.dotCluster(56, 122 + bob, 12, this.colors.pants);
       this.dotCluster(88, 122 + bob, 12, this.colors.pants);
     } else {
-      this.dotCluster(56, 122 + bob, 11, this.colors.maidBlack);
-      this.dotCluster(88, 122 + bob, 11, this.colors.maidBlack);
-      this.dotCluster(56, 134 + bob, 7, this.colors.maidWhite); // Dizaltı Çorap
-      this.dotCluster(88, 134 + bob, 7, this.colors.maidWhite);
+      // Çıplak üst bacak (Ten Rengi)
+      this.dotCluster(60, 114 + bob, 7, this.colors.skin);
+      this.dotCluster(84, 114 + bob, 7, this.colors.skin);
+      // Dizüstü Çorap Fırfırları
+      this.dotCluster(60, 122 + bob, 8, this.colors.maidWhite);
+      this.dotCluster(84, 122 + bob, 8, this.colors.maidWhite);
+      // Siyah Dizüstü Çorap
+      this.dotCluster(60, 134 + bob, 7, this.colors.maidBlack);
+      this.dotCluster(84, 134 + bob, 7, this.colors.maidBlack);
     }
 
     // --- 2. GÖVDE VE DETAYLI KIYAFET ---
     if (this.outfit === 'casual') {
-      // Arka plan siyah tişört (Daha geniş)
       this.dotCluster(72, 82 + bob, 24, this.colors.shirt);
-      // Sağ-Sol Kot Ceket Önü Açık Tasarım
       this.dotCluster(60, 82 + bob, 18, this.colors.denimLight);
       this.dotCluster(84, 82 + bob, 18, this.colors.denimLight);
-      // Ceket Yakaları
       this.dotCluster(60, 64 + bob, 8, this.colors.denim);
       this.dotCluster(84, 64 + bob, 8, this.colors.denim);
     } else {
-      // Maid Elbisesi Detayları
-      this.dotCluster(72, 82 + bob, 25, this.colors.maidBlack); // Ana elbise
-      this.dotCluster(72, 86 + bob, 18, this.colors.maidWhite); // Önlük
-      this.dotCluster(72, 70 + bob, 10, this.colors.maidFrill); // Yaka Fırfırları
+      // Açık Yaka (Ten Rengi Göğüs/Boyun Kısmı)
+      this.dotCluster(72, 65 + bob, 11, this.colors.skin);
+      // Dar Korse/Bel
+      this.dotCluster(72, 78 + bob, 15, this.colors.maidBlack);
+      // Kabarık Kısa Etek
+      this.dotCluster(72, 95 + bob, 24, this.colors.maidBlack); 
+      this.dotCluster(72, 102 + bob, 26, this.colors.maidWhite); // Etek ucu fırfırı
+      // Beyaz Önlük
+      this.dotCluster(72, 82 + bob, 14, this.colors.maidWhite); 
+      
+      // Kısa Kollar (Omuzda fırfırlı kabarık kumaş)
+      this.dotCluster(48, 72 + bob, 8, this.colors.maidBlack);
+      this.dotCluster(96, 72 + bob, 8, this.colors.maidBlack);
+      this.dotCluster(48, 78 + bob, 6, this.colors.maidWhite); // Kol ucu fırfırı
+      this.dotCluster(96, 78 + bob, 6, this.colors.maidWhite); 
     }
 
-    // --- 3. KAFA, ÇENE VE SAÇ ---
-    this.dotCluster(72, 48 + bob, 18, this.colors.skinShadow); // Çene altı gölgesi
-    this.dotCluster(72, 40 + bob, 24, this.colors.skin);       // Yüz
+    // --- 3. KAFA VE SAÇ ---
+    this.dotCluster(72, 48 + bob, 18, this.colors.skinShadow); 
+    this.dotCluster(72, 40 + bob, 24, this.colors.skin);       
     
-    // Saç (Yanlar kısa, üst kalın)
     this.dotCluster(50, 36 + bob, 7, this.colors.hair);
     this.dotCluster(94, 36 + bob, 7, this.colors.hair);
     this.dotCluster(72, 22 + bob, 24, this.colors.hair);
 
-    // Hizmetçi Tacı (Maid Headband) Utanınca belirir
+    // Hizmetçi Tacı
     if (this.outfit === 'maid') {
       this.dotCluster(54, 18 + bob, 6, this.colors.maidWhite);
       this.dotCluster(90, 18 + bob, 6, this.colors.maidWhite);
       this.dotCluster(72, 14 + bob, 12, this.colors.maidFrill);
     }
 
-    // --- 4. YÜZ, GÖZLER, KAŞLAR VE UTANMA ---
+    // --- 4. YÜZ İFADESİ VE UTANMA ---
     if (this.action === 'shy') {
       this.dotCluster(63, 39 + bob, 3.5, this.colors.eyebrow);
       this.dotCluster(81, 39 + bob, 3.5, this.colors.eyebrow);
@@ -236,51 +241,66 @@ class InteractiveCharacter {
       this.dotCluster(81, 35 + bob, 4.5, this.colors.eyebrow);
     }
     
-    // Gözler (Daha büyük ve net)
     this.dot(64, 42 + bob, 3.5, '#0a0a0f');
     this.dot(82, 42 + bob, 3.5, '#0a0a0f');
-    this.dot(65, 40.5 + bob, 1.5, '#ffffff'); // HD Parlama
+    this.dot(65, 40.5 + bob, 1.5, '#ffffff'); 
     this.dot(83, 40.5 + bob, 1.5, '#ffffff');
 
-    // Anime Kızarıklığı
     if (this.action === 'shy') {
       this.dotCluster(56, 48 + bob, 7, this.colors.blush);
       this.dotCluster(88, 48 + bob, 7, this.colors.blush);
     }
 
-    // Ağız Detayı
     if (this.action === 'wave' || this.action === 'point') {
       this.dotCluster(72, 53 + bob, 4, '#aa5b4c'); 
-      this.dotCluster(72, 54 + bob, 2, '#ffffff'); // Diş detayı
+      this.dotCluster(72, 54 + bob, 2, '#ffffff'); 
     } else if (this.action === 'shy') {
-      this.dot(72, 54 + bob, 2.5, '#aa5b4c'); // Büzüşmüş ağız
+      this.dot(72, 54 + bob, 2.5, '#aa5b4c'); 
     } else {
-      this.dotCluster(72, 52 + bob, 2.5, '#aa5b4c'); // Normal gülümseme
+      this.dotCluster(72, 52 + bob, 2.5, '#aa5b4c'); 
     }
 
-    // --- 5. KOLLAR VE ETKİLEŞİM ---
+    // --- 5. KOLLAR VE ELLER ---
     if (this.action === 'wave') {
-      this.dotCluster(44, 80 + bob, 15, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      // Sol Kol
+      if(this.outfit === 'casual') this.dotCluster(44, 80 + bob, 15, this.colors.denim);
+      else this.dotCluster(48, 90 + bob, 5, this.colors.skin); 
+
+      // Sağ Kol (Havada)
       const waveMotion = Math.sin(this.timer * 8) * 10;
-      this.dotCluster(110 + waveMotion, 45 - waveMotion, 12, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
+      if(this.outfit === 'casual') this.dotCluster(110 + waveMotion, 45 - waveMotion, 12, this.colors.denim);
+      else this.dotCluster(110 + waveMotion, 45 - waveMotion, 5, this.colors.skin); 
+      
       this.dotCluster(115 + waveMotion, 32 - waveMotion, 9, this.colors.skin); 
     } 
     else if (this.action === 'point') {
-      this.dotCluster(44, 80 + bob, 15, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
-      this.dotCluster(110, 78 + bob, 14, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
-      this.dotCluster(135, 78 + bob, 8, this.colors.skin); // HD İşaret Eden El
+      if(this.outfit === 'casual') this.dotCluster(44, 80 + bob, 15, this.colors.denim);
+      else this.dotCluster(48, 90 + bob, 5, this.colors.skin);
+
+      if(this.outfit === 'casual') this.dotCluster(110, 78 + bob, 14, this.colors.denim);
+      else this.dotCluster(110, 78 + bob, 6, this.colors.skin);
+      
+      this.dotCluster(135, 78 + bob, 8, this.colors.skin); 
     }
     else if (this.action === 'shy') {
-      // Utanınca kolları içe çeker
-      this.dotCluster(58, 68 + bob, 10, this.colors.skin);
-      this.dotCluster(86, 68 + bob, 10, this.colors.skin);
+      // Utanınca çıplak kollarıyla göğsünü/yüzünü kapatmaya çalışır
+      this.dotCluster(58, 72 + bob, 7, this.colors.skin); 
+      this.dotCluster(86, 72 + bob, 7, this.colors.skin); 
     } 
     else {
-      // Idle
-      this.dotCluster(44, 82 + bob, 15, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
-      this.dotCluster(100, 82 + bob, 15, this.outfit === 'casual' ? this.colors.denim : this.colors.maidBlack);
-      this.dotCluster(44, 100 + bob, 8, this.colors.skin);
-      this.dotCluster(100, 100 + bob, 8, this.colors.skin);
+      // Idle (Bekleme)
+      if(this.outfit === 'casual') {
+        this.dotCluster(44, 82 + bob, 15, this.colors.denim);
+        this.dotCluster(100, 82 + bob, 15, this.colors.denim);
+        this.dotCluster(44, 100 + bob, 8, this.colors.skin);
+        this.dotCluster(100, 100 + bob, 8, this.colors.skin);
+      } else {
+        // Çıplak, aşağı sarkan ince kollar
+        this.dotCluster(48, 90 + bob, 5, this.colors.skin);
+        this.dotCluster(96, 90 + bob, 5, this.colors.skin);
+        this.dotCluster(48, 102 + bob, 7, this.colors.skin);
+        this.dotCluster(96, 102 + bob, 7, this.colors.skin);
+      }
     }
 
     ctx.restore();
